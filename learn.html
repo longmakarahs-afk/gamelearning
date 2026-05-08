@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ល្បែងប្រកួតគណិតវិទ្យាខ្មែរ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --boy-color: #2196F3;
+            --girl-color: #E91E63;
+            --bg-color: #f0f8ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            font-family: 'Kantumruy Pro', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* កម្រិតថ្នាក់ */
+        .header-ui {
+            background: #fff;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        select {
+            padding: 5px 15px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: 2px solid var(--primary-color);
+            cursor: pointer;
+        }
+
+        /* តំបន់ប្រកួត (Tug of War) */
+        .battle-arena {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(to bottom, #87CEEB 60%, #90EE90 60%);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rope {
+            position: absolute;
+            width: 100%;
+            height: 8px;
+            background: #8B4513;
+            top: 55%;
+            z-index: 1;
+        }
+
+        .center-line {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100px;
+            background: red;
+            z-index: 2;
+        }
+
+        .players-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            transition: transform 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+        }
+
+        .character {
+            font-size: 80px;
+            position: absolute;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .student-boy { left: calc(50% - 150px); }
+        .student-girl { left: calc(50% + 50px); }
+
+        .uniform-label {
+            font-size: 14px;
+            background: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: -10px;
+            font-weight: bold;
+        }
+
+        /* តំបន់បញ្ជានិងសំណួរ */
+        .game-controls {
+            display: flex;
+            height: 45vh;
+            background: #fff;
+        }
+
+        .player-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border: 2px solid #ddd;
+        }
+
+        .player-zone.boy { border-top: 8px solid var(--boy-color); }
+        .player-zone.girl { border-top: 8px solid var(--girl-color); }
+
+        .question-box {
+            font-size: 35px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 15px;
+            min-height: 60px;
+        }
+
+        .answer-preview {
+            color: #666;
+            font-size: 24px;
+            text-align: center;
+            height: 30px;
+            margin-bottom: 5px;
+        }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            flex: 1;
+        }
+
+        .btn {
+            background: #eee;
+            border: none;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: active 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .btn:active { background: #ccc; transform: scale(0.95); }
+        .btn.clear { background: #ffccbc; grid-column: span 1; }
+        .btn.boy-btn { background: #e3f2fd; }
+        .btn.girl-btn { background: #fce4ec; }
+
+        /* លទ្ធផល */
+        #winner-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .khmer-number { font-family: 'Kantumruy Pro'; }
+    </style>
+</head>
+<body>
+
+    <div class="header-ui">
+        <label>ជ្រើសរើសកម្រិតថ្នាក់៖ </label>
+        <select id="gradeSelect" onchange="resetGame()">
+            <option value="1">ថ្នាក់ទី ១</option>
+            <option value="2">ថ្នាក់ទី ២</option>
+            <option value="3">ថ្នាក់ទី ៣</option>
+            <option value="4">ថ្នាក់ទី ៤</option>
+            <option value="5">ថ្នាក់ទី ៥</option>
+            <option value="6">ថ្នាក់ទី ៦</option>
+        </select>
+        <button onclick="resetGame()" style="padding: 5px 15px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer;">ចាប់ផ្ដើមឡើងវិញ</button>
+    </div>
+
+    <div class="battle-arena">
+        <div class="rope"></div>
+        <div class="center-line"></div>
+        <div class="players-container" id="ropeContainer">
+            <div class="character student-boy" id="boyChar">
+                👦
+                <div class="uniform-label">សិស្សប្រុស</div>
+            </div>
+            <div class="character student-girl" id="girlChar">
+                👧
+                <div class="uniform-label">សិស្សស្រី</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-controls">
+        <!-- Player 1: Boy -->
+        <div class="player-zone boy">
+            <div class="question-box" id="q1">...</div>
+            <div class="answer-preview" id="ans1"></div>
+            <div class="numpad">
+                <button class="btn boy-btn" onclick="typeNum(1, '១')">១</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '២')">២</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៣')">៣</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៤')">៤</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៥')">៥</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៦')">៦</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៧')">៧</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៨')">៨</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '៩')">៩</button>
+                <button class="btn boy-btn" onclick="typeNum(1, '០')">០</button>
+                <button class="btn clear" onclick="clearAns(1)" style="grid-column: span 5;">លុប</button>
+            </div>
+        </div>
+
+        <!-- Player 2: Girl -->
+        <div class="player-zone girl">
+            <div class="question-box" id="q2">...</div>
+            <div class="answer-preview" id="ans2"></div>
+            <div class="numpad">
+                <button class="btn girl-btn" onclick="typeNum(2, '១')">១</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '២')">២</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៣')">៣</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៤')">៤</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៥')">៥</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៦')">៦</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៧')">៧</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៨')">៨</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '៩')">៩</button>
+                <button class="btn girl-btn" onclick="typeNum(2, '០')">០</button>
+                <button class="btn clear" onclick="clearAns(2)" style="grid-column: span 5;">លុប</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="winner-overlay">
+        <h1 id="winnerTextText"></h1>
+        <button onclick="resetGame()" style="padding: 15px 30px; font-size: 20px; cursor: pointer; border-radius: 10px; border: none; background: var(--primary-color); color: white;">លេងម្ដងទៀត</button>
+    </div>
+
+    <script>
+        const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+        let gameState = {
+            ropePos: 0, // 0 is center, negative is boy wins, positive is girl wins
+            p1Answer: "",
+            p2Answer: "",
+            p1Correct: 0,
+            p2Correct: 0,
+            gameOver: false
+        };
+
+        let currentQ1 = { q: "", a: 0 };
+        let currentQ2 = { q: "", a: 0 };
+
+        function toKhmerNum(num) {
+            return num.toString().split('').map(d => isNaN(d) ? d : khmerDigits[parseInt(d)]).join('');
+        }
+
+        function fromKhmerNum(khmerStr) {
+            let res = "";
+            for (let char of khmerStr) {
+                let index = khmerDigits.indexOf(char);
+                if (index !== -1) res += index;
+            }
+            return parseInt(res);
+        }
+
+        function generateQuestion(grade) {
+            let a, b, op, qText, ans;
+            const ops = ['+', '-'];
+            if (grade >= 3) ops.push('×');
+            if (grade >= 4) ops.push('÷');
+            
+            op = ops[Math.floor(Math.random() * ops.length)];
+
+            switch(op) {
+                case '+':
+                    a = Math.floor(Math.random() * (grade * 10)) + 1;
+                    b = Math.floor(Math.random() * (grade * 10)) + 1;
+                    ans = a + b;
+                    qText = `${toKhmerNum(a)} + ${toKhmerNum(b)} = ?`;
+                    break;
+                case '-':
+                    a = Math.floor(Math.random() * (grade * 10)) + 10;
+                    b = Math.floor(Math.random() * a);
+                    ans = a - b;
+                    qText = `${toKhmerNum(a)} - ${toKhmerNum(b)} = ?`;
+                    break;
+                case '×':
+                    a = Math.floor(Math.random() * (grade + 3)) + 2;
+                    b = Math.floor(Math.random() * 10) + 1;
+                    ans = a * b;
+                    qText = `${toKhmerNum(a)} × ${toKhmerNum(b)} = ?`;
+                    break;
+                case '÷':
+                    ans = Math.floor(Math.random() * 9) + 1;
+                    b = Math.floor(Math.random() * grade) + 2;
+                    a = ans * b;
+                    qText = `${toKhmerNum(a)} ÷ ${toKhmerNum(b)} = ?`;
+                    break;
+            }
+            return { q: qText, a: ans };
+        }
+
+        function updateQuestions() {
+            const grade = parseInt(document.getElementById('gradeSelect').value);
+            currentQ1 = generateQuestion(grade);
+            currentQ2 = generateQuestion(grade);
+            document.getElementById('q1').innerText = currentQ1.q;
+            document.getElementById('q2').innerText = currentQ2.q;
+        }
+
+        function typeNum(player, num) {
+            if(gameState.gameOver) return;
+            
+            if (player === 1) {
+                gameState.p1Answer += num;
+                document.getElementById('ans1').innerText = gameState.p1Answer;
+                if (fromKhmerNum(gameState.p1Answer) === currentQ1.a) {
+                    moveRope(-40);
+                    gameState.p1Answer = "";
+                    document.getElementById('ans1').innerText = "";
+                    currentQ1 = generateQuestion(parseInt(document.getElementById('gradeSelect').value));
+                    document.getElementById('q1').innerText = currentQ1.q;
+                } else if (gameState.p1Answer.length >= currentQ1.a.toString().length + 1) {
+                    clearAns(1);
+                }
+            } else {
+                gameState.p2Answer += num;
+                document.getElementById('ans2').innerText = gameState.p2Answer;
+                if (fromKhmerNum(gameState.p2Answer) === currentQ2.a) {
+                    moveRope(40);
+                    gameState.p2Answer = "";
+                    document.getElementById('ans2').innerText = "";
+                    currentQ2 = generateQuestion(parseInt(document.getElementById('gradeSelect').value));
+                    document.getElementById('q2').innerText = currentQ2.q;
+                } else if (gameState.p2Answer.length >= currentQ2.a.toString().length + 1) {
+                    clearAns(2);
+                }
+            }
+        }
+
+        function clearAns(player) {
+            if (player === 1) {
+                gameState.p1Answer = "";
+                document.getElementById('ans1').innerText = "";
+            } else {
+                gameState.p2Answer = "";
+                document.getElementById('ans2').innerText = "";
+            }
+        }
+
+        function moveRope(dist) {
+            gameState.ropePos += dist;
+            document.getElementById('ropeContainer').style.transform = `translateX(${gameState.ropePos}px)`;
+            
+            // Check winner
+            const winLimit = window.innerWidth / 3;
+            if (Math.abs(gameState.ropePos) > winLimit) {
+                endGame(gameState.ropePos < 0 ? "សិស្សប្រុស ឈ្នះ!" : "សិស្សស្រី ឈ្នះ!");
+            }
+        }
+
+        function endGame(msg) {
+            gameState.gameOver = true;
+            document.getElementById('winner-overlay').style.display = 'flex';
+            document.getElementById('winnerTextText').innerText = msg;
+        }
+
+        function resetGame() {
+            gameState = {
+                ropePos: 0,
+                p1Answer: "",
+                p2Answer: "",
+                p1Correct: 0,
+                p2Correct: 0,
+                gameOver: false
+            };
+            document.getElementById('ropeContainer').style.transform = `translateX(0px)`;
+            document.getElementById('winner-overlay').style.display = 'none';
+            document.getElementById('ans1').innerText = "";
+            document.getElementById('ans2').innerText = "";
+            updateQuestions();
+        }
+
+        // ចាប់ផ្ដើមដំបូង
+        updateQuestions();
+    </script>
+</body>
+</html>
